@@ -510,9 +510,9 @@ const DATA_FR = {
   },
   identity: {
     brand: "Mohamed Chedly Bahles",
-    title: "Étudiant Ingénieur — Business Intelligence & IA",
+    title: "Étudiant Ingénieur — Business Intelligence ",
     subtitle:
-      "Passionné par l’analyse de données, les prédictions et les technologies qui transforment la donnée en valeur stratégique. J’aime concevoir des solutions data-driven mêlant BI, IA et web.",
+      "je conçois des solutions permettant de transformer la donnée en décisions stratégiques. Curieux et rigoureux, j’explore les liens entre data engineering, visualisation et modélisation prédictive afin de créer des outils d’aide à la décision performants et durables.",
     email: "medchedly.bahles@esprit.tn",
     portrait: portraitImg,
     badges: ["Power BI", "SQL", "Talend", "Python", "Flask", "Machine Learning", "Deep Learning", "Angular"],
@@ -527,7 +527,9 @@ const DATA_FR = {
       "Power BI","SQL","Talend","Python","Flask","Machine Learning","Deep Learning","Java","PHP","C/C++","HTML/CSS","JavaScript","Symfony","FlutterFlow","Angular",
     ],
     languages: ["Français — Professionnel (B2)", "Anglais — Courant (B2)", "Arabe — Langue maternelle"],
-    bio: `En tant qu’étudiant en 3ème année à ESPRIT (BI), je transforme les données en décisions via la BI et l’IA. Intéressé par l’IA, le développement logiciel et l’analyse prédictive, j’aime concevoir des solutions data-driven concrètes.`,
+    bio: `Étudiant en 3ᵉ année du cycle ingénieur à ESPRIT en Business Intelligence, je combine les rôles de Data Engineer, Data Analyst et Data Scientist. J’aime concevoir des solutions data-driven capables de transformer l’information brute en leviers d’innovation et de performance.
+
+Actuellement à la recherche d’un stage de fin d’études (PFE) en Tunisie ou à l’étranger, je suis disponible à partir du 1er janvier 2026.`,
   },
   experiences: [
     { role: "Stagiaire", org: "Arab Tunisien Bank (ATB)", period: "01/08/2023 – 31/08/2023", desc: "Stage de formation humaine et sociale (4 semaines)." },
