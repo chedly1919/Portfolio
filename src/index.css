@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Lucide icon classes used in the component (sun/moon) – simple fallback */
+.i-lucide-sun::before{content:'☀️';display:inline-block}
+.i-lucide-moon::before{content:'🌙';display:inline-block}
+
+:root{scroll-behavior:smooth}
