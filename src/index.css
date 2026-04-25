@@ -73,6 +73,22 @@ body {
   animation-delay: 1s;
 }
 
+.typewriter-text {
+  display: inline-flex;
+  align-items: center;
+}
+
+.typewriter-text::after {
+  content: "";
+  display: inline-block;
+  width: 0.08em;
+  height: 1em;
+  margin-left: 0.14em;
+  border-radius: 999px;
+  background: currentColor;
+  animation: cursor-blink 900ms steps(2, start) infinite;
+}
+
 .stat-card {
   transition:
     transform 220ms ease,
@@ -147,6 +163,24 @@ body {
 
   50% {
     transform: translateY(-8px);
+  }
+}
+
+@keyframes cursor-blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+
+  46%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typewriter-text::after {
+    animation: none;
   }
 }
 

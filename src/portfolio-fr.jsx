@@ -13,6 +13,10 @@ function getPageFromHash() {
   return PAGE_IDS.includes(hash) ? hash : "accueil";
 }
 
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 const SKILL_LOGOS = {
   "Power BI": {
     src: "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/powerbi.svg",
@@ -381,9 +385,7 @@ export default function PortfolioFR() {
                 <span className="text-violet-400">{data.identity.nameAccent}</span>
               </h1>
               <div className="mt-4 flex min-h-[3.5rem] items-center">
-                <p className="text-2xl font-semibold tracking-tight text-violet-600 dark:text-violet-300 md:text-4xl">
-                  {data.identity.heroRoles[0]}
-                </p>
+                <TypewriterText words={data.identity.heroRoles} />
               </div>
               <p className="mt-3 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300 md:text-lg">
                 {data.identity.subtitle}
@@ -821,6 +823,54 @@ export default function PortfolioFR() {
         />
       )}
     </div>
+  );
+}
+
+function TypewriterText({ words }) {
+  const [roleIndex, setRoleIndex] = useState(0);
+  const [characterCount, setCharacterCount] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const currentWord = words[roleIndex] || "";
+  const displayText = currentWord.slice(0, characterCount);
+
+  useEffect(() => {
+    setRoleIndex(0);
+    setCharacterCount(0);
+    setIsDeleting(false);
+  }, [words]);
+
+  useEffect(() => {
+    if (!words.length || prefersReducedMotion()) {
+      setCharacterCount(currentWord.length);
+      return undefined;
+    }
+
+    const isWordComplete = characterCount === currentWord.length;
+    const isWordCleared = characterCount === 0;
+    const delay = isWordComplete && !isDeleting ? 1400 : isDeleting ? 45 : 75;
+
+    const timeoutId = window.setTimeout(() => {
+      if (isWordComplete && !isDeleting) {
+        setIsDeleting(true);
+        return;
+      }
+
+      if (isWordCleared && isDeleting) {
+        setIsDeleting(false);
+        setRoleIndex((current) => (current + 1) % words.length);
+        return;
+      }
+
+      setCharacterCount((current) => current + (isDeleting ? -1 : 1));
+    }, delay);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [characterCount, currentWord, isDeleting, words]);
+
+  return (
+    <p className="typewriter-text text-2xl font-semibold tracking-tight text-violet-600 dark:text-violet-300 md:text-4xl">
+      <span>{displayText || "\u00a0"}</span>
+    </p>
   );
 }
 
