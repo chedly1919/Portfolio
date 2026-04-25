@@ -1,766 +1,792 @@
-import React, { useMemo, useState, useEffect } from "react";
-import portraitImg from "./assets/portrait.jpg";
+import React, { useEffect, useMemo, useState } from "react";
+import { portfolioContent } from "./data/portfolioData";
 
-/**
- * Portfolio multilingue — Mohamed Chedly Bahles
- * React + Vite + Tailwind
- * - Bouton FR / EN dans le header
- * - Fiche projet avec galerie et contenu scrollable
- */
+const ALL_TAGS = {
+  fr: "Tout",
+  en: "All",
+};
+
+const PAGE_IDS = ["accueil", "apropos", "experiences", "projets", "resume", "contact"];
+
+function getPageFromHash() {
+  const hash = window.location.hash.replace("#", "");
+  return PAGE_IDS.includes(hash) ? hash : "accueil";
+}
+
+function getSkillIcon(skill) {
+  const icons = {
+    "Power BI": "📊",
+    SQL: "🗄",
+    Talend: "⚙",
+    Python: "🐍",
+    Flask: "🌐",
+    "Machine Learning": "🤖",
+    "Deep Learning": "🧠",
+    Java: "☕",
+    PHP: "🐘",
+    "Spring Boot": "🍃",
+    "C/C++": "💻",
+    "HTML/CSS": "🎨",
+    JavaScript: "✨",
+    Symfony: "🔷",
+    FlutterFlow: "📱",
+    Angular: "🅰",
+  };
+
+  return icons[skill] || "•";
+}
 
 export default function PortfolioFR() {
   const [theme, setTheme] = useState("light");
-  const [lang, setLang] = useState("fr");              // langue active
-  const baseTag = lang === "fr" ? "Tout" : "All";      // libellé du filtre global
-  const DATA = lang === "fr" ? DATA_FR : DATA_EN;      // jeu de données
-
-  // ✅ le tag actif est initialisé sur baseTag
-  const [activeTag, setActiveTag] = useState(baseTag);
-
+  const [lang, setLang] = useState("fr");
+  const [currentPage, setCurrentPage] = useState(() => getPageFromHash());
+  const [activeTag, setActiveTag] = useState(ALL_TAGS.fr);
   const [lightbox, setLightbox] = useState(null);
   const [openProject, setOpenProject] = useState(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    message: "",
+  });
 
-  const projects = Array.isArray(DATA?.projects) ? DATA.projects : [];
-
-  // ✅ quand la langue change, on remet le filtre sur "Tout/All"
-  useEffect(() => {
-    setActiveTag(baseTag);
-  }, [baseTag]);
-
-  // Liste des tags (avec "Tout/All" en premier)
-  const tags = useMemo(() => {
-    const all = projects.flatMap((p) => (Array.isArray(p.tags) ? p.tags : []));
-    return [baseTag, ...Array.from(new Set(all))];
-  }, [projects, baseTag]);
+  const data = portfolioContent[lang];
+  const allTagLabel = ALL_TAGS[lang];
+  const projects = data.projects;
 
   useEffect(() => {
-    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    setActiveTag(allTagLabel);
+    setOpenProject(null);
+    setLightbox(null);
+  }, [allTagLabel]);
+
+  useEffect(() => {
+    if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) {
       setTheme("dark");
     }
   }, []);
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") root.classList.add("dark");
-    else root.classList.remove("dark");
+    document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
 
-  // Filtrage des projets (affiche tout si activeTag === baseTag)
-  const filtered = useMemo(() => {
-    return projects.filter(
-      (p) => activeTag === baseTag || (Array.isArray(p.tags) && p.tags.includes(activeTag))
-    );
-  }, [activeTag, projects, baseTag]);
+  useEffect(() => {
+    const handleHashChange = () => {
+      setCurrentPage(getPageFromHash());
+      setOpenProject(null);
+      setLightbox(null);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    window.addEventListener("hashchange", handleHashChange);
+    handleHashChange();
+
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  const tags = useMemo(() => {
+    const allTags = projects.flatMap((project) => project.tags || []);
+    return [allTagLabel, ...new Set(allTags)];
+  }, [allTagLabel, projects]);
+
+  const filteredProjects = useMemo(() => {
+    return projects.filter((project) => {
+      return activeTag === allTagLabel || project.tags?.includes(activeTag);
+    });
+  }, [activeTag, allTagLabel, projects]);
+
+  const handleFormChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((current) => ({ ...current, [name]: value }));
+  };
+
+  const goToPage = (page) => {
+    setCurrentPage(page);
+    setOpenProject(null);
+    setLightbox(null);
+
+    if (window.location.hash.replace("#", "") !== page) {
+      window.location.hash = page;
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const handleContactSubmit = (event) => {
+    event.preventDefault();
+
+    const subject =
+      lang === "fr"
+        ? `Contact portfolio - ${formData.name}`
+        : `Portfolio contact - ${formData.name}`;
+
+    const body = [
+      `${data.ui.name}: ${formData.name}`,
+      `Email: ${formData.email}`,
+      "",
+      formData.message,
+    ].join("\n");
+
+    window.location.href = `mailto:${data.identity.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 selection:bg-amber-200/60 selection:text-slate-900">
-      {/* Navbar */}
-      <header className="sticky top-0 z-50 backdrop-blur supports-[backdrop-filter]:bg-white/60 bg-white/90 dark:bg-slate-950/80 border-b border-slate-200/60 dark:border-slate-800">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <a href="#accueil" className="font-semibold tracking-tight text-lg">
-            {DATA.identity.brand}
-          </a>
-          <nav className="hidden md:flex gap-6 text-sm">
+    <div className="min-h-screen bg-[var(--color-bg)] text-slate-900 transition-colors duration-300 dark:bg-[var(--color-bg-dark)] dark:text-slate-100">
+      <div className="pointer-events-none fixed inset-0 opacity-90">
+        <div className="hero-mesh absolute inset-0" />
+        <div className="hero-grid absolute inset-0" />
+      </div>
+
+      <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/82 backdrop-blur-xl dark:border-white/10 dark:bg-[#060816]/92">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+          <button
+            type="button"
+            onClick={() => goToPage("accueil")}
+            className="text-left text-base font-semibold tracking-tight text-slate-900 sm:text-xl dark:text-white"
+          >
+            {data.identity.brand}
+          </button>
+
+          <nav className="hidden items-center gap-3 text-sm md:flex">
             {[
-              [DATA.ui.about, "apropos"],
-              [DATA.ui.experiences, "experiences"],
-              [DATA.ui.projects, "projets"],
-              [DATA.ui.contact, "contact"],
-            ].map(([label, id]) => (
-              <a key={id} href={`#${id}`} className="hover:text-amber-600 transition">
+              [data.ui.home, "accueil", "⌂"],
+              [data.ui.about, "apropos", "◌"],
+              [data.ui.experiences, "experiences", "▣"],
+              [data.ui.projects, "projets", "⌘"],
+              [data.ui.resume, "resume", "☰"],
+            ].map(([label, id, icon]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => goToPage(id)}
+                className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 transition ${
+                  currentPage === id
+                    ? "bg-slate-900/5 text-amber-600 dark:bg-white/10 dark:text-amber-300"
+                    : "text-slate-700 hover:bg-slate-900/5 hover:text-amber-600 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white"
+                }`}
+              >
+                <span className="text-sm opacity-80">{icon}</span>
                 {label}
-              </a>
+              </button>
             ))}
-          </nav>
-          <div className="flex items-center gap-2">
-            {/* bouton langue */}
             <button
-              onClick={() => setLang((l) => (l === "fr" ? "en" : "fr"))}
-              className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:border-amber-500 text-sm"
+              type="button"
+              onClick={() => goToPage("contact")}
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 shadow-sm transition ${
+                currentPage === "contact"
+                  ? "bg-violet-500 text-white"
+                  : "bg-violet-500/90 text-white hover:bg-violet-500"
+              }`}
+            >
+              {data.ui.contact}
+            </button>
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setLang((current) => (current === "fr" ? "en" : "fr"))}
+              className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-800 transition hover:border-amber-500 hover:text-amber-600 dark:border-white/12 dark:bg-white/[0.03] dark:text-slate-100"
               aria-label="Toggle language"
-              title={lang === "fr" ? "Switch to English" : "Passer en Français"}
+              title={lang === "fr" ? "Switch to English" : "Passer en francais"}
             >
               {lang === "fr" ? "EN" : "FR"}
             </button>
-
-            {DATA.links.cv && (
-              <a
-                href={DATA.links.cv}
-                target="_blank"
-                rel="noreferrer"
-                className="hidden sm:inline-flex px-3 py-1.5 text-sm rounded-xl border border-slate-300 dark:border-slate-700 hover:border-amber-500 hover:text-amber-600"
-              >
-                {DATA.ui.downloadCV}
-              </a>
-            )}
             <button
-              aria-label="Basculer le thème"
-              onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
-              className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-slate-300 dark:border-slate-700 hover:border-amber-500"
+              type="button"
+              aria-label={data.ui.themeToggle}
+              onClick={() => setTheme((current) => (current === "light" ? "dark" : "light"))}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-300 text-slate-800 transition hover:border-amber-500 dark:border-white/12 dark:bg-white/[0.03] dark:text-slate-100"
             >
-              <span className="i-lucide-sun dark:i-lucide-moon" />
-              <svg className="hidden" />
+              <span aria-hidden="true" className="text-lg leading-none">
+                {theme === "light" ? "☀" : "☾"}
+              </span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* Hero */}
-      <section id="accueil" className="relative isolate overflow-hidden">
-        <div className="max-w-6xl mx-auto px-4 py-12 md:py-20 grid md:grid-cols-2 gap-10 items-center">
-          <div>
-            <h1 className="text-4xl md:text-5xl font-semibold leading-tight tracking-tight">
-              {DATA.identity.title}
-            </h1>
-            <p className="mt-5 text-slate-600 dark:text-slate-300 max-w-prose">{DATA.identity.subtitle}</p>
-            <div className="mt-6 flex flex-wrap gap-2">
-              {DATA.identity.badges.map((b) => (
-                <span key={b} className="px-3 py-1 rounded-full text-xs border border-slate-300 dark:border-slate-700">
-                  {b}
+      <main className="relative z-10">
+        {currentPage === "accueil" ? (
+        <section className="mx-auto max-w-6xl px-4 pb-16 pt-12 md:pb-24 md:pt-20">
+          <div className="grid items-center gap-10 lg:grid-cols-[1.2fr_0.8fr]">
+            <div className="reveal-up">
+              <p className="inline-flex rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-amber-700 dark:text-amber-300">
+                {data.identity.eyebrow}
+              </p>
+              <div className="mt-5 flex items-center gap-3 text-xl font-medium tracking-tight text-slate-700 md:text-2xl dark:text-slate-100">
+                <span>{data.identity.greeting}</span>
+                <span className="inline-block text-3xl md:text-4xl">
+                  {data.identity.greetingEmoji}
                 </span>
-              ))}
+              </div>
+              <h1 className="mt-4 max-w-3xl text-4xl font-semibold leading-[1.05] tracking-tight md:text-6xl">
+                <span className="text-slate-900 dark:text-white">{data.identity.nameLead}</span>{" "}
+                <span className="text-violet-400">{data.identity.nameAccent}</span>
+              </h1>
+              <div className="mt-4 flex min-h-[3.5rem] items-center">
+                <p className="text-2xl font-semibold tracking-tight text-violet-600 dark:text-violet-300 md:text-4xl">
+                  {data.identity.heroRoles[0]}
+                </p>
+              </div>
+              <p className="mt-3 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300 md:text-lg">
+                {data.identity.subtitle}
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => goToPage("projets")}
+                  className="rounded-2xl bg-amber-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition hover:bg-amber-600"
+                >
+                  {data.ui.primaryCta}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => goToPage("contact")}
+                  className="rounded-2xl border border-slate-300 px-5 py-3 text-sm font-semibold transition hover:border-amber-500 hover:text-amber-600 dark:border-slate-700"
+                >
+                  {data.ui.secondaryCta}
+                </button>
+              </div>
+
+              <div className="mt-6 grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
+                <div className="light-panel rounded-[1.75rem] border border-emerald-500/25 bg-emerald-50/80 p-5 shadow-lg shadow-emerald-100/60 dark:bg-emerald-500/10 dark:shadow-none">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700 dark:text-emerald-300">
+                    {data.identity.currentStatusLabel}
+                  </p>
+                  <p className="mt-2 text-lg font-semibold tracking-tight">
+                    {data.identity.currentStatusTitle}
+                  </p>
+                  <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                    {data.identity.currentStatusText}
+                  </p>
+                </div>
+                <div className="light-panel rounded-[1.75rem] border border-slate-200/70 bg-white/80 p-5 shadow-lg shadow-slate-200/50 dark:border-white/10 dark:bg-slate-900/70 dark:shadow-none">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+                    {data.identity.valueLabel}
+                  </p>
+                  <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                    {data.identity.valueText}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-10 grid gap-3 sm:grid-cols-3">
+                {data.identity.stats.map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="stat-card light-elevated rounded-3xl border border-white/60 bg-white/80 p-5 backdrop-blur dark:border-white/10 dark:bg-slate-900/70 dark:shadow-none"
+                  >
+                    <p className="text-2xl font-semibold">{stat.value}</p>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="reveal-up lg:justify-self-end">
+              <div className="hero-visual light-elevated relative overflow-hidden rounded-[2rem] border border-white/60 bg-white/75 p-4 backdrop-blur dark:border-white/10 dark:bg-slate-900/70 dark:shadow-none">
+                <div className="absolute inset-x-6 top-0 h-24 rounded-full bg-amber-500/20 blur-3xl" />
+                <div className="floating-chip absolute right-6 top-6 rounded-full border border-white/70 bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700 shadow-lg dark:border-white/10 dark:bg-slate-950/80 dark:text-slate-200">
+                  {data.identity.heroChip}
+                </div>
+                <img
+                  src={data.identity.portrait}
+                  alt={data.identity.brand}
+                  className="relative aspect-[4/5] w-full rounded-[1.5rem] object-cover"
+                />
+                <div className="relative mt-4 rounded-[1.5rem] bg-slate-950 px-5 py-4 text-white dark:bg-black">
+                  <p className="text-sm font-semibold">{data.identity.brand}</p>
+                  <p className="mt-1 text-sm text-white/70">{data.identity.focus}</p>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="md:justify-self-end">
-            <div className="aspect-square w-full max-w-sm mx-auto rounded-3xl overflow-hidden ring-1 ring-slate-200/70 dark:ring-slate-800 shadow">
-              <img
-                src={DATA.identity.portrait}
-                alt="Portrait"
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = portraitImg;
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
+        ) : null}
 
-      {/* À propos */}
-      <section id="apropos" className="bg-slate-50/70 dark:bg-slate-900/40 border-y border-slate-200/70 dark:border-slate-800">
-        <div className="max-w-6xl mx-auto px-4 py-16 grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <h2 className="text-2xl md:text-3xl font-semibold">{DATA.ui.aboutMe}</h2>
-            <p className="mt-4 text-slate-700 dark:text-slate-300 whitespace-pre-line">{DATA.about.bio}</p>
+        {currentPage === "apropos" ? (
+        <SectionShell title={data.ui.aboutMe} subtitle={data.about.intro}>
+          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+            <article className="rounded-[2rem] border border-slate-200/70 bg-white/85 p-7 shadow-xl shadow-slate-200/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/75 dark:shadow-none">
+              <p className="whitespace-pre-line text-base leading-8 text-slate-700 dark:text-slate-300">
+                {data.about.bio}
+              </p>
+            </article>
 
-            <div className="mt-8 grid md:grid-cols-2 gap-6">
-              <div className="rounded-3xl p-6 ring-1 ring-slate-200/70 dark:ring-slate-800">
-                <h3 className="font-semibold">{DATA.ui.skills}</h3>
-                <ul className="mt-3 flex flex-wrap gap-2 text-sm">
-                  {DATA.about.skills.map((s) => (
-                    <li key={s} className="px-2.5 py-1 rounded-full border border-slate-300 dark:border-slate-700">
-                      {s}
+            <div className="grid gap-6">
+              <InfoCard title={data.ui.skills}>
+                <ul className="grid gap-3 sm:grid-cols-2">
+                  {data.about.skills.map((skill) => (
+                    <li
+                      key={skill}
+                      className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200"
+                    >
+                      <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-lg shadow-sm dark:bg-slate-900">
+                        {getSkillIcon(skill)}
+                      </span>
+                      <span className="font-medium">{skill}</span>
                     </li>
                   ))}
                 </ul>
-              </div>
-              <div className="rounded-3xl p-6 ring-1 ring-slate-200/70 dark:ring-slate-800">
-                <h3 className="font-semibold">{DATA.ui.languages}</h3>
-                <ul className="mt-3 space-y-1 text-sm">
-                  {DATA.about.languages.map((l) => (
-                    <li key={l} className="flex items-center justify-between">
-                      <span>{l.split("—")[0].trim()}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full border border-slate-300 dark:border-slate-700">
-                        {l.split("—")[1]?.trim()}
+              </InfoCard>
+
+              <InfoCard title={data.ui.languages}>
+                <ul className="space-y-3 text-sm">
+                  {data.about.languages.map((language) => (
+                    <li key={language.name} className="flex items-center justify-between gap-3">
+                      <span>{language.name}</span>
+                      <span className="rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-700 dark:text-amber-300">
+                        {language.level}
                       </span>
                     </li>
                   ))}
                 </ul>
-              </div>
+              </InfoCard>
             </div>
           </div>
 
-          <aside className="space-y-6">
-            <div className="rounded-3xl p-6 ring-1 ring-slate-200/70 dark:ring-slate-800">
-              <h3 className="font-semibold">{DATA.ui.contact}</h3>
-              <ul className="mt-3 text-sm space-y-1">
-                <li>
-                  <span className="font-medium">{DATA.ui.phone} :</span> +216 29218186
-                </li>
-                <li>
-                  <span className="font-medium">Email :</span>{" "}
-                  <a className="text-amber-600 hover:underline" href="mailto:medchedly.bahles@esprit.tn">
-                    medchedly.bahles@esprit.tn
-                  </a>
-                </li>
-                <li>
-                  <span className="font-medium">{DATA.ui.location} :</span> Tunis, La Marsa
-                </li>
-              </ul>
-            </div>
-            <div className="rounded-3xl p-6 ring-1 ring-slate-200/70 dark:ring-slate-800">
-              <h3 className="font-semibold">{DATA.ui.education}</h3>
-              <ul className="mt-3 text-sm space-y-3">
-                {DATA.about.education.map((e, i) => (
-                  <li key={i}>
-                    <p className="font-medium">{e.title}</p>
-                    <p className="text-slate-600 dark:text-slate-400">
-                      {e.place} — {e.period}
+          <div className="mt-6 grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+            <InfoCard title={data.ui.education}>
+              <ul className="space-y-4">
+                {data.about.education.map((item) => (
+                  <li key={`${item.title}-${item.period}`}>
+                    <p className="font-semibold">{item.title}</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-300">
+                      {item.place}
+                    </p>
+                    <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-400">
+                      {item.period}
                     </p>
                   </li>
                 ))}
               </ul>
-            </div>
-          </aside>
-        </div>
-      </section>
+            </InfoCard>
 
-      {/* Expériences */}
-      <section id="experiences" className="max-w-6xl mx-auto px-4 py-16">
-        <h2 className="text-2xl md:text-3xl font-semibold">{DATA.ui.experiences}</h2>
-        <ol className="mt-8 relative border-s border-slate-200 dark:border-slate-800">
-          {DATA.experiences.map((e, i) => (
-            <li key={i} className="pl-6 py-4 relative">
-              <span className="absolute left-[-6px] top-6 w-3 h-3 rounded-full bg-amber-500" />
-              <div className="flex items-center justify-between">
-                <p className="font-medium">
-                  {e.role} — <span className="text-amber-600">{e.org}</span>
-                </p>
-                <span className="text-xs opacity-70">{e.period}</span>
-              </div>
-              <p className="text-sm text-slate-600 dark:text-slate-300">{e.desc}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      {/* Réalisations */}
-      <section id="projets" className="bg-slate-50/70 dark:bg-slate-900/40 border-y border-slate-200/70 dark:border-slate-800">
-        <div className="max-w-6xl mx-auto px-4 py-16">
-          <header className="mb-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl md:text-3xl font-semibold">{DATA.ui.projects}</h2>
-                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{DATA.ui.projectsSubtitle}</p>
-              </div>
-              <div className="hidden md:flex flex-wrap gap-2">
-                {tags.map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setActiveTag(t)}
-                    className={`px-3 py-1.5 rounded-full text-sm border transition ${
-                      activeTag === t
-                        ? "border-amber-500 text-amber-600"
-                        : "border-slate-300 dark:border-slate-700 hover:border-amber-500"
-                    }`}
+            <InfoCard title={data.ui.contact}>
+              <div className="grid gap-4 text-sm sm:grid-cols-2">
+                {data.contact.quickFacts.map((fact) => (
+                  <div
+                    key={fact.label}
+                    className="rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-950/70"
                   >
-                    {t}
-                  </button>
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                      {fact.label}
+                    </p>
+                    {fact.href ? (
+                      <a
+                        href={fact.href}
+                        target={fact.href.startsWith("http") ? "_blank" : undefined}
+                        rel={fact.href.startsWith("http") ? "noreferrer" : undefined}
+                        className="mt-2 block font-medium text-amber-600"
+                      >
+                        {fact.value}
+                      </a>
+                    ) : (
+                      <p className="mt-2 font-medium">{fact.value}</p>
+                    )}
+                  </div>
                 ))}
               </div>
-            </div>
-          </header>
+            </InfoCard>
+          </div>
+        </SectionShell>
+        ) : null}
 
-          {/* Grille projets */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((p) => (
-              <article key={p.id} className="group rounded-3xl overflow-hidden ring-1 ring-slate-200/70 dark:ring-slate-800 hover:shadow-lg transition">
-                <div
-                  className="aspect-[4/3] overflow-hidden cursor-pointer"
-                  onClick={() => setOpenProject(p)}
-                  title={DATA.ui.viewDetails}
-                >
-                  <img
-                    src={p.cover}
-                    alt={p.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition"
-                    onError={(e) => {
-                      e.currentTarget.src = "/bi-the-way/1.png";
-                    }}
-                  />
+        {currentPage === "experiences" ? (
+        <SectionShell title={data.ui.experiences} subtitle={data.ui.experienceLead}>
+          <div className="grid gap-5">
+            {data.experiences.map((experience) => (
+              <article
+                key={`${experience.org}-${experience.period}`}
+                className={`rounded-[2rem] border p-6 shadow-xl backdrop-blur dark:shadow-none ${
+                  experience.highlight
+                    ? "border-emerald-500/25 bg-emerald-50/80 shadow-emerald-100/60 dark:bg-emerald-500/10"
+                    : "border-slate-200/70 bg-white/85 shadow-slate-200/50 dark:border-white/10 dark:bg-slate-900/75"
+                }`}
+              >
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    {experience.badge ? (
+                      <p className="mb-2 w-fit rounded-full bg-slate-900 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white dark:bg-white dark:text-slate-900">
+                        {experience.badge}
+                      </p>
+                    ) : null}
+                    <p className="text-lg font-semibold tracking-tight">{experience.role}</p>
+                    <p className="mt-1 text-sm font-medium text-amber-600">{experience.org}</p>
+                  </div>
+                  <span className="w-fit rounded-full bg-slate-100 px-4 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                    {experience.period}
+                  </span>
                 </div>
-                <div className="p-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold tracking-tight">{p.title}</h3>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                      {p.year}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 line-clamp-3">{p.summary}</p>
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {(Array.isArray(p.tags) ? p.tags : []).map((t) => (
-                      <span key={t} className="text-[11px] px-2 py-0.5 rounded-full border border-slate-300 dark:border-slate-700">
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="mt-4">
-                    <button onClick={() => setOpenProject(p)} className="text-sm text-amber-600 hover:underline">
-                      {DATA.ui.viewDetails}
-                    </button>
-                  </div>
-                </div>
+                <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                  {experience.desc}
+                </p>
               </article>
             ))}
           </div>
-        </div>
-      </section>
+        </SectionShell>
+        ) : null}
 
-      {/* Contact */}
-      <section id="contact" className="max-w-6xl mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-2 gap-10 items-start">
-          <div>
-            <h2 className="text-2xl md:text-3xl font-semibold">{DATA.ui.contact}</h2>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 max-w-prose">{DATA.ui.contactLead}</p>
-            <div className="mt-6 space-y-2 text-sm">
-              <p>
-                <span className="font-medium">{DATA.ui.phone} :</span> +216 29218186
-              </p>
-              <p>
-                <span className="font-medium">Email :</span>{" "}
-                <a className="text-amber-600 hover:underline" href="mailto:medchedly.bahles@esprit.tn">
-                  medchedly.bahles@esprit.tn
-                </a>
-              </p>
-              <p>
-                <span className="font-medium">{DATA.ui.location} :</span> Tunis, La Marsa
-              </p>
-              <p>
-                <span className="font-medium">LinkedIn :</span>{" "}
-                <a className="text-amber-600 hover:underline" href={DATA.links.linkedin} target="_blank" rel="noreferrer">
-                  {DATA.ui.profile}
-                </a>
-              </p>
-            </div>
+        {currentPage === "projets" ? (
+        <SectionShell title={data.ui.projects} subtitle={data.ui.projectsSubtitle}>
+          <div className="mb-8 flex flex-wrap gap-2">
+            {tags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => setActiveTag(tag)}
+                className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+                  activeTag === tag
+                    ? "border-amber-500 bg-amber-500 text-white"
+                    : "border-slate-300 bg-white/70 hover:border-amber-500 hover:text-amber-600 dark:border-slate-700 dark:bg-slate-900/60"
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
           </div>
-          <form
-            action="mailto:medchedly.bahles@esprit.tn"
-            method="post"
-            encType="text/plain"
-            className="rounded-3xl p-6 ring-1 ring-slate-200/70 dark:ring-slate-800"
-          >
-            <div className="grid gap-4">
-              <div>
-                <label className="text-sm">{DATA.ui.name}</label>
-                <input name="nom" required className="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2" />
-              </div>
-              <div>
-                <label className="text-sm">Email</label>
-                <input type="email" name="email" required className="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2" />
-              </div>
-              <div>
-                <label className="text-sm">{DATA.ui.message}</label>
-                <textarea name="message" rows={5} required className="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2" />
-              </div>
-              <button className="justify-self-start px-5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white shadow">{DATA.ui.send}</button>
-            </div>
-          </form>
-        </div>
-      </section>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-200/70 dark:border-slate-800">
-        <div className="max-w-6xl mx-auto px-4 py-8 text-sm flex flex-wrap items-center justify-between gap-3">
-          <p>
-            © {new Date().getFullYear()} {DATA.identity.brand}. {DATA.ui.rights}
-          </p>
-          <div className="flex gap-3">
-            <a href="#accueil" className="hover:text-amber-600">
-              {DATA.ui.backToTop}
-            </a>
-            {DATA.links.cv && (
-              <a href={DATA.links.cv} target="_blank" rel="noreferrer" className="hover:text-amber-600">
-                {DATA.ui.cv}
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {filteredProjects.map((project) => (
+              <article
+                key={project.id}
+                className="group overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white/85 shadow-xl shadow-slate-200/50 transition hover:-translate-y-1 hover:shadow-2xl dark:border-white/10 dark:bg-slate-900/75 dark:shadow-none"
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpenProject(project)}
+                  className="block w-full text-left"
+                >
+                  <div className="overflow-hidden">
+                    <img
+                      src={project.cover}
+                      alt={project.title}
+                      className="aspect-[4/3] w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <h3 className="text-lg font-semibold tracking-tight">{project.title}</h3>
+                      <span className="rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">
+                        {project.year}
+                      </span>
+                    </div>
+                    <p className="mt-3 min-h-[4.5rem] text-sm leading-6 text-slate-600 dark:text-slate-300">
+                      {project.summary}
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {project.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full border border-slate-300 px-2.5 py-1 text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:border-slate-700 dark:text-slate-300"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </button>
+              </article>
+            ))}
+          </div>
+        </SectionShell>
+        ) : null}
+
+        {currentPage === "contact" ? (
+        <SectionShell title={data.ui.contact} subtitle={data.ui.contactLead}>
+          <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+            <InfoCard title={data.ui.letsTalk}>
+              <div className="space-y-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                <p>{data.contact.lead}</p>
+                <div className="rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-950/70">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    {data.contact.availabilityLabel}
+                  </p>
+                  <p className="mt-2 font-medium text-slate-800 dark:text-slate-100">
+                    {data.contact.availabilityText}
+                  </p>
+                </div>
+                <a
+                  href={`mailto:${data.identity.email}`}
+                  className="inline-flex rounded-2xl bg-slate-900 px-4 py-3 font-medium text-white transition hover:bg-amber-500 dark:bg-white dark:text-slate-900"
+                >
+                  {data.identity.email}
+                </a>
+                <div className="flex flex-wrap gap-3">
+                  <a
+                    href={data.links.linkedin}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-2xl border border-slate-300 px-4 py-2 font-medium transition hover:border-amber-500 hover:text-amber-600 dark:border-slate-700"
+                  >
+                    LinkedIn
+                  </a>
+                  <a
+                    href={data.links.cv}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-2xl border border-slate-300 px-4 py-2 font-medium transition hover:border-amber-500 hover:text-amber-600 dark:border-slate-700"
+                  >
+                    {data.ui.downloadCV}
+                  </a>
+                </div>
+              </div>
+            </InfoCard>
+
+            <form
+              onSubmit={handleContactSubmit}
+              className="rounded-[2rem] border border-slate-200/70 bg-white/85 p-7 shadow-xl shadow-slate-200/50 backdrop-blur dark:border-white/10 dark:bg-slate-900/75 dark:shadow-none"
+            >
+              <div className="grid gap-4">
+                <label className="grid gap-2">
+                  <span className="text-sm font-medium">{data.ui.name}</span>
+                  <input
+                    name="name"
+                    value={formData.name}
+                    onChange={handleFormChange}
+                    required
+                    className="rounded-2xl border border-slate-300 bg-white/70 px-4 py-3 outline-none transition focus:border-amber-500 dark:border-slate-700 dark:bg-slate-950/60"
+                  />
+                </label>
+                <label className="grid gap-2">
+                  <span className="text-sm font-medium">Email</span>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleFormChange}
+                    required
+                    className="rounded-2xl border border-slate-300 bg-white/70 px-4 py-3 outline-none transition focus:border-amber-500 dark:border-slate-700 dark:bg-slate-950/60"
+                  />
+                </label>
+                <label className="grid gap-2">
+                  <span className="text-sm font-medium">{data.ui.message}</span>
+                  <textarea
+                    name="message"
+                    rows={6}
+                    value={formData.message}
+                    onChange={handleFormChange}
+                    required
+                    className="rounded-2xl border border-slate-300 bg-white/70 px-4 py-3 outline-none transition focus:border-amber-500 dark:border-slate-700 dark:bg-slate-950/60"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="w-fit rounded-2xl bg-amber-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-amber-600"
+                >
+                  {data.ui.send}
+                </button>
+              </div>
+            </form>
+          </div>
+        </SectionShell>
+        ) : null}
+
+        {currentPage === "resume" ? (
+        <SectionShell title={data.ui.resumeTitle} subtitle={data.ui.resumeLead}>
+          <div className="grid gap-6">
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-[2rem] border border-slate-200/70 bg-white/85 p-6 shadow-xl shadow-slate-200/50 backdrop-blur dark:border-white/10 dark:bg-slate-900/75 dark:shadow-none">
+              <div>
+                <p className="text-lg font-semibold tracking-tight">{data.ui.resumeCardTitle}</p>
+                <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+                  {data.ui.resumeCardText}
+                </p>
+              </div>
+              <a
+                href={data.links.cv}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex rounded-2xl bg-amber-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-amber-600"
+              >
+                {data.ui.downloadCV}
               </a>
-            )}
+            </div>
+
+            <div className="overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white/90 shadow-2xl shadow-slate-200/50 dark:border-white/10 dark:bg-slate-900/80 dark:shadow-none">
+              <iframe
+                src={data.links.cv}
+                title={data.ui.resume}
+                className="h-[78vh] w-full bg-white"
+              />
+            </div>
           </div>
+        </SectionShell>
+        ) : null}
+      </main>
+
+      <footer className="relative z-10 border-t border-slate-200/70 py-8 dark:border-white/10">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between dark:text-slate-400">
+          <p>
+            (c) {new Date().getFullYear()} {data.identity.brand}. {data.ui.rights}
+          </p>
+          <button type="button" onClick={() => goToPage("accueil")} className="text-left transition hover:text-amber-600">
+            {data.ui.backToTop}
+          </button>
         </div>
       </footer>
 
-      {/* Lightbox */}
       {lightbox && (
-        <div className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
-          <figure className="max-w-4xl w-full" onClick={(e) => e.stopPropagation()}>
-            <img src={lightbox.src} alt={lightbox.title} className="w-full h-auto rounded-2xl shadow" />
-            <figcaption className="mt-3 text-slate-200 text-sm">{lightbox.title}</figcaption>
-            <button onClick={() => setLightbox(null)} className="mt-4 px-4 py-2 rounded-xl bg-white/90 text-slate-900 hover:bg-white">
-              {DATA.ui.close}
-            </button>
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
+          onClick={() => setLightbox(null)}
+        >
+          <figure
+            className="max-w-5xl overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950 p-4"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <img
+              src={lightbox.src}
+              alt={lightbox.title}
+              className="max-h-[75vh] w-full rounded-[1.5rem] object-contain"
+            />
+            <figcaption className="mt-3 flex items-center justify-between gap-4 text-sm text-slate-300">
+              <span>{lightbox.title}</span>
+              <button
+                type="button"
+                onClick={() => setLightbox(null)}
+                className="rounded-xl border border-white/15 px-3 py-2 transition hover:border-amber-500 hover:text-amber-300"
+              >
+                {data.ui.close}
+              </button>
+            </figcaption>
           </figure>
         </div>
       )}
 
-      {/* Modal projet */}
       {openProject && (
-        <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setOpenProject(null)}>
-          <article
-            className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 max-w-5xl w-full rounded-3xl shadow-2xl overflow-hidden ring-1 ring-slate-200/70 dark:ring-slate-800"
-            onClick={(e) => e.stopPropagation()}
-            style={{ height: "85vh" }}
-          >
-            <header className="flex items-start justify-between p-6 border-b border-slate-200/70 dark:border-slate-800">
-              <div>
-                <h3 className="text-xl font-semibold">{openProject.title}</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-300">{openProject.year} · {(openProject.tags || []).join(" · ")}</p>
-              </div>
-              <button className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:border-amber-500" onClick={() => setOpenProject(null)}>
-                {DATA.ui.close}
-              </button>
-            </header>
-
-            {/* Corps scrollable */}
-            <div className="p-6 grid md:grid-cols-3 gap-6 h-[calc(85vh-88px)]">
-              {/* Colonne gauche */}
-              <div className="md:col-span-2 space-y-4 overflow-y-auto pr-2">
-                <img
-                  src={openProject.cover}
-                  alt="cover"
-                  className="w-full rounded-2xl"
-                  onError={(e) => {
-                    e.currentTarget.src = "/bi-the-way/1.png";
-                  }}
-                />
-                {openProject.details && (
-                  <div className="prose prose-sm dark:prose-invert max-w-none">
-                    {(openProject.details.paragraphs || []).map((p, i) => (
-                      <p key={i}>{p}</p>
-                    ))}
-                    {openProject.details.features && (
-                      <>
-                        <h4>{DATA.ui.keyFeatures}</h4>
-                        <ul>
-                          {openProject.details.features.map((f, i) => (
-                            <li key={i}>{f}</li>
-                          ))}
-                        </ul>
-                      </>
-                    )}
-                    {openProject.details.stack && (
-                      <>
-                        <h4>{DATA.ui.stack}</h4>
-                        <ul>
-                          {openProject.details.stack.map((t, i) => (
-                            <li key={i}>{t}</li>
-                          ))}
-                        </ul>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Colonne droite */}
-              <aside className="space-y-3 overflow-y-auto pr-1">
-                <h4 className="font-semibold">{DATA.ui.gallery}</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {(openProject.gallery || []).map((g, idx) => (
-                    <button
-                      key={idx}
-                      className="aspect-[4/3] overflow-hidden rounded-xl ring-1 ring-slate-200/70 dark:ring-slate-800"
-                      onClick={() => setLightbox({ src: g, title: openProject.title })}
-                    >
-                      <img
-                        src={g}
-                        alt=""
-                        className="w-full h-full object-cover hover:scale-105 transition"
-                        onError={(e) => {
-                          e.currentTarget.src = "/bi-the-way/1.png";
-                        }}
-                      />
-                    </button>
-                  ))}
-                </div>
-              </aside>
-            </div>
-          </article>
-        </div>
+        <ProjectModal
+          data={data}
+          project={openProject}
+          onClose={() => setOpenProject(null)}
+          onOpenLightbox={setLightbox}
+        />
       )}
     </div>
   );
 }
 
-/* ======================
-   ———— DATA (FR/EN) ———
-   ====================== */
+function SectionShell({ title, subtitle, children }) {
+  return (
+    <section className="mx-auto max-w-6xl px-4 py-16 md:py-24">
+      <div className="mb-10 max-w-3xl">
+        <p className="text-xs font-semibold uppercase tracking-[0.26em] text-amber-600">
+          SECTION
+        </p>
+        <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">{title}</h2>
+        {subtitle ? (
+          <p className="mt-3 text-base leading-7 text-slate-600 dark:text-slate-300">
+            {subtitle}
+          </p>
+        ) : null}
+      </div>
+      {children}
+    </section>
+  );
+}
 
-const COMMON_LINKS = {
-  cv: "",
-  linkedin: "https://www.linkedin.com/in/med-chedly-bahles-569b89272",
-  portfolio: "",
-};
+function InfoCard({ title, children }) {
+  return (
+    <article className="rounded-[2rem] border border-slate-200/70 bg-white/85 p-6 shadow-xl shadow-slate-200/50 backdrop-blur dark:border-white/10 dark:bg-slate-900/75 dark:shadow-none">
+      <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
+      <div className="mt-5">{children}</div>
+    </article>
+  );
+}
 
-/* ---------- FR ---------- */
-const DATA_FR = {
-  ui: {
-    about: "À propos",
-    aboutMe: "À propos de moi",
-    experiences: "Expériences",
-    projects: "Réalisations",
-    projectsSubtitle: "Sélection de projets académiques et personnels.",
-    contact: "Contact",
-    phone: "Téléphone",
-    location: "Localisation",
-    education: "Éducation",
-    skills: "Compétences",
-    languages: "Langues",
-    downloadCV: "Télécharger CV",
-    viewDetails: "Voir détails",
-    send: "Envoyer",
-    name: "Nom",
-    message: "Message",
-    profile: "Profil",
-    backToTop: "Haut de page",
-    cv: "CV",
-    rights: "Tous droits réservés.",
-    close: "Fermer",
-    keyFeatures: "Fonctionnalités clés",
-    stack: "Technologies",
-    gallery: "Galerie",
-    contactLead: "Pour une opportunité, un stage ou une collaboration, contactez-moi.",
-  },
-  identity: {
-    brand: "Mohamed Chedly Bahles",
-    title: "Étudiant Ingénieur — Business Intelligence ",
-    subtitle:
-      "je conçois des solutions permettant de transformer la donnée en décisions stratégiques. Curieux et rigoureux, j’explore les liens entre data engineering, visualisation et modélisation prédictive afin de créer des outils d’aide à la décision performants et durables.",
-    email: "medchedly.bahles@esprit.tn",
-    portrait: portraitImg,
-    badges: ["Power BI", "SQL", "Talend", "Python", "Flask", "Machine Learning", "Deep Learning", "Angular"],
-  },
-  links: COMMON_LINKS,
-  about: {
-    education: [
-      { title: "Baccalauréat Sciences Techniques", place: "Lycée IAD - La Marsa", period: "2020 — 2021" },
-      { title: "Diplôme d’Ingénieur en Informatique (en cours)", place: "ESPRIT", period: "2021 — Présent" },
-    ],
-    skills: [
-      "Power BI","SQL","Talend","Python","Flask","Machine Learning","Deep Learning","Java","PHP","C/C++","HTML/CSS","JavaScript","Symfony","FlutterFlow","Angular",
-    ],
-    languages: ["Français — Professionnel (B2)", "Anglais — Courant (B2)", "Arabe — Langue maternelle"],
-    bio: `Étudiant en 3ᵉ année du cycle ingénieur à ESPRIT en Business Intelligence, je combine les rôles de Data Engineer, Data Analyst et Data Scientist. J’aime concevoir des solutions data-driven capables de transformer l’information brute en leviers d’innovation et de performance.
+function ProjectModal({ data, project, onClose, onOpenLightbox }) {
+  const details = project.details || { paragraphs: [], features: [], stack: [] };
 
-Actuellement à la recherche d’un stage de fin d’études (PFE) en Tunisie ou à l’étranger, je suis disponible à partir du 1er janvier 2026.`,
-  },
-  experiences: [
-    { role: "Stagiaire", org: "Arab Tunisien Bank (ATB)", period: "01/08/2023 – 31/08/2023", desc: "Stage de formation humaine et sociale (4 semaines)." },
-    { role: "Stagiaire", org: "Monétique Tunisie (SMT)", period: "01/08/2024 – 15/09/2024", desc: "Stage d’immersion en entreprise (6 semaines)." },
-    { role: "Stagiaire Ingénieur", org: "OMD Tunisia", period: "01/07/2025 – 31/08/2025", desc: "Stage d’ingénieur (8 semaines)." },
-  ],
-  projects: [
-    {
-      id: "bi-the-way",
-      title: "BI The Way — Plateforme BI & IA pour Cliniques",
-      year: "2025",
-      cover: "/bi-the-way/4.png?v=1",
-      summary:
-        "Plateforme d’aide à la décision pour cliniques privées : dashboards par rôle, modèles IA/ML, DWH Talend, Flask + Angular, Face ID.",
-      tags: ["BI", "ML/DL", "Flask", "Angular", "Power BI", "Talend"],
-      gallery: [
-        "/bi-the-way/1.png","/bi-the-way/2.png","/bi-the-way/3.png","/bi-the-way/4.png","/bi-the-way/5.png",
-        "/bi-the-way/6.png","/bi-the-way/7.png","/bi-the-way/8.png","/bi-the-way/9.png","/bi-the-way/10.png"
-      ],
-      details: {
-        paragraphs: [
-          "Plateforme complète de Business Intelligence et d’Intelligence Artificielle pour soutenir la décision en clinique privée.",
-          "Deux rôles principaux : Administrateur et Chef de service, avec des tableaux de bord et insights adaptés.",
-          "Intégration IA/ML (séjour, cancers, AVC, sentiments, tracking du staff) + dashboards Power BI + DWH Talend.",
-        ],
-        features: [
-          "Modèles IA/ML : Length of Stay, cancers (prostate, sein), AVC (DL), sentiment analysis (DL), staff tracking (DL).",
-          "Dashboards Power BI : flux patients, ressources, satisfaction, rentabilité.",
-          "Data engineering : DWH (étoile) avec Talend, nettoyage/transformations, web scraping (actualités médicales).",
-          "Déploiement : APIs Flask + Front Angular, connexion Face ID, contenu dynamique selon profil.",
-        ],
-        stack: ["Python (ML/DL), Flask", "Angular", "Talend", "Power BI", "Scikit-learn, TensorFlow", "HTML/CSS", "Face Recognition"],
-      },
-    },
-    {
-      id: "sdl-2d",
-      title: "SDL-Project — Jeu 2D",
-      year: "2022",
-      cover: "/bi-the-way/jeux.jpg?v=1",
-      gallery: ["/bi-the-way/jeux2.png","/bi-the-way/jeux3.png","/bi-the-way/jeux4.png"],
-      summary: "Jeu 2D en C/SDL : affichage, collisions, assets et gameplay.",
-      tags: ["C", "SDL", "Jeu 2D"],
-    },
-    {
-      id: "tuni-troc",
-      title: "Tuni-Troc — Plateforme d’échange de meubles",
-      year: "2022",
-      cover: "/bi-the-way/troc.png?v=1",
-      summary:
-        "Plateforme web (PHP7/JS/Oracle) : annonces avec photos, recherche par localisation/catégorie/marque, messagerie intégrée.",
-      tags: ["PHP 7", "JavaScript", "Oracle", "CSS"],
-    },
-    {
-      id: "centre-visite",
-      title: "Gestion des équipements d’un centre de visite",
-      year: "2023",
-      cover: "/bi-the-way/centre.png?v=1",
-      summary: "Application desktop (C++/Qt) avec maquette RFID (Arduino) pour gérer un centre de visite technique véhicules.",
-      tags: ["C++", "Qt", "Arduino", "Desktop"],
-    },
-    {
-      id: "mrbeast-shop",
-      title: "MrBeast — Boutique (Desktop/Mobile/Web)",
-      year: "2024",
-      cover: "/bi-the-way/mrbeastlogo.png",
-      gallery: ["/bi-the-way/mrbest1.PNG","/bi-the-way/mrbest2.PNG","/bi-the-way/mrbest3.PNG","/bi-the-way/mrbest4.PNG"],
-      details: {
-        paragraphs: [
-          "Application Desktop, Mobile et site Web d'une boutique d’articles de sport.",
-          "JavaFX (desktop), FlutterFlow (mobile), Symfony (web) avec dashboard d’administration.",
-        ],
-      },
-      summary: "Suite e-commerce : JavaFX (desktop), FlutterFlow (mobile), Symfony (web) + dashboard admin.",
-      tags: ["JavaFX", "FlutterFlow", "Symfony", "Web"],
-    },
-    {
-      id: "agro-predict",
-      title: "AgroPredict — Web App ML & BI",
-      year: "2024",
-      cover: "/bi-the-way/agro6.PNG?v=1",
-      gallery: ["/bi-the-way/agro5.PNG","/bi-the-way/agro4.PNG","/bi-the-way/agro3.PNG","/bi-the-way/agro2.PNG","/bi-the-way/agro&.PNG"],
-      details: {
-        paragraphs: [
-          "Application web intelligente pour la prévision et la recommandation de cultures en Inde (ML + Power BI).",
-          "KNN pour la prédiction de production, chatbot AgriBot, formulaires dynamiques, UI Flask sécurisée.",
-        ],
-      },
-      summary: "Prédiction & recommandation de cultures (KNN), dashboard Power BI, chatbot, Flask sécurisé.",
-      tags: ["Flask", "ML", "Power BI"],
-    },
-  ],
-};
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <article
+        className="max-h-[88vh] w-full max-w-6xl overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white shadow-2xl dark:border-white/10 dark:bg-slate-950"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <header className="flex flex-col gap-4 border-b border-slate-200/70 p-6 dark:border-white/10 md:flex-row md:items-start md:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-600">
+              {project.year}
+            </p>
+            <h3 className="mt-2 text-2xl font-semibold tracking-tight">{project.title}</h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {project.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-slate-300 px-3 py-1 text-xs uppercase tracking-[0.18em] text-slate-500 dark:border-slate-700 dark:text-slate-300"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-fit rounded-xl border border-slate-300 px-4 py-2 text-sm transition hover:border-amber-500 hover:text-amber-600 dark:border-slate-700"
+          >
+            {data.ui.close}
+          </button>
+        </header>
 
-/* ---------- EN ---------- */
-const DATA_EN = {
-  ui: {
-    about: "About",
-    aboutMe: "About me",
-    experiences: "Experience",
-    projects: "Projects",
-    projectsSubtitle: "Selected academic and personal projects.",
-    contact: "Contact",
-    phone: "Phone",
-    location: "Location",
-    education: "Education",
-    skills: "Skills",
-    languages: "Languages",
-    downloadCV: "Download CV",
-    viewDetails: "View details",
-    send: "Send",
-    name: "Name",
-    message: "Message",
-    profile: "Profile",
-    backToTop: "Back to top",
-    cv: "CV",
-    rights: "All rights reserved.",
-    close: "Close",
-    keyFeatures: "Key features",
-    stack: "Tech stack",
-    gallery: "Gallery",
-    contactLead: "For opportunities, internships or collaborations, get in touch.",
-  },
-  identity: {
-    brand: "Mohamed Chedly Bahles",
-    title: "Engineering Student — Business Intelligence & AI",
-    subtitle:
-      "Passionate about data analysis, prediction and technologies that turn data into strategic value. I build data-driven solutions mixing BI, AI and web.",
-    email: "medchedly.bahles@esprit.tn",
-    portrait: portraitImg,
-    badges: ["Power BI", "SQL", "Talend", "Python", "Flask", "Machine Learning", "Deep Learning", "Angular"],
-  },
-  links: COMMON_LINKS,
-  about: {
-    education: [
-      { title: "High-school Baccalaureate — Technical Sciences", place: "IAD High School - La Marsa", period: "2020 — 2021" },
-      { title: "Computer Engineering Degree (ongoing)", place: "ESPRIT", period: "2021 — Present" },
-    ],
-    skills: [
-      "Power BI","SQL","Talend","Python","Flask","Machine Learning","Deep Learning","Java","PHP","C/C++","HTML/CSS","JavaScript","Symfony","FlutterFlow","Angular",
-    ],
-    languages: ["French — Professional (B2)", "English — Fluent (B2)", "Arabic — Native"],
-    bio: `As a 3rd-year engineering student at ESPRIT (BI), I turn data into decisions with BI & AI. I enjoy building concrete, data-driven solutions.`,
-  },
-  experiences: [
-    { role: "Intern", org: "Arab Tunisian Bank (ATB)", period: "01/08/2023 – 31/08/2023", desc: "Human & social training internship (4 weeks)." },
-    { role: "Intern", org: "Monétique Tunisie (SMT)", period: "01/08/2024 – 15/09/2024", desc: "Company immersion internship (6 weeks)." },
-    { role: "Engineer Intern", org: "OMD Tunisia", period: "01/07/2025 – 31/08/2025", desc: "Engineering internship (8 weeks)." },
-  ],
-  projects: [
-    {
-      id: "bi-the-way",
-      title: "BI The Way — BI & AI Platform for Clinics",
-      year: "2025",
-      cover: "/bi-the-way/4.png?v=1",
-      summary:
-        "Decision-support platform for private clinics: role-based dashboards, AI/ML models, Talend DWH, Flask + Angular, Face ID.",
-      tags: ["BI", "ML/DL", "Flask", "Angular", "Power BI", "Talend"],
-      gallery: [
-        "/bi-the-way/1.png","/bi-the-way/2.png","/bi-the-way/3.png","/bi-the-way/4.png","/bi-the-way/5.png",
-        "/bi-the-way/6.png","/bi-the-way/7.png","/bi-the-way/8.png","/bi-the-way/9.png","/bi-the-way/10.png"
-      ],
-      details: {
-        paragraphs: [
-          "End-to-end BI & AI platform to support decisions in private clinics.",
-          "Two main roles: Administrator and Head of Service with tailored dashboards and insights.",
-          "Integrated ML/DL (length of stay, cancers, stroke, sentiment, staff tracking) + Power BI dashboards + Talend DWH.",
-        ],
-        features: [
-          "AI/ML models: LoS, prostate & breast cancer, stroke (DL), sentiment (DL), staff tracking (DL).",
-          "Power BI dashboards: patient flow, resources, satisfaction, profitability.",
-          "Data engineering: star-schema DWH with Talend, cleaning/ETL, medical news web-scraping.",
-          "Deployment: Flask APIs + Angular front-end, Face ID login, role-based dynamic content.",
-        ],
-        stack: ["Python (ML/DL), Flask", "Angular", "Talend", "Power BI", "Scikit-learn, TensorFlow", "HTML/CSS", "Face Recognition"],
-      },
-    },
-    {
-      id: "sdl-2d",
-      title: "SDL Project — 2D Game",
-      year: "2022",
-      cover: "/bi-the-way/jeux.jpg?v=1",
-      gallery: ["/bi-the-way/jeux2.png","/bi-the-way/jeux3.png","/bi-the-way/jeux4.png"],
-      summary: "2D game in C/SDL: rendering, collisions, assets and gameplay.",
-      tags: ["C", "SDL", "2D Game"],
-    },
-    {
-      id: "tuni-troc",
-      title: "Tuni-Troc — Furniture Exchange Platform",
-      year: "2022",
-      cover: "/bi-the-way/troc.png?v=1",
-      summary:
-        "Web platform (PHP7/JS/Oracle): listings with photos, search by location/category/brand, integrated messaging.",
-      tags: ["PHP 7", "JavaScript", "Oracle", "CSS"],
-    },
-    {
-      id: "centre-visite",
-      title: "Vehicle Inspection Center Equipment Management",
-      year: "2023",
-      cover: "/bi-the-way/centre.png?v=1",
-      summary: "Desktop app (C++/Qt) with RFID mock-up (Arduino) to manage a vehicle inspection center.",
-      tags: ["C++", "Qt", "Arduino", "Desktop"],
-    },
-    {
-      id: "mrbeast-shop",
-      title: "MrBeast — Shop (Desktop/Mobile/Web)",
-      year: "2024",
-      cover: "/bi-the-way/mrbeastlogo.png",
-      gallery: ["/bi-the-way/mrbest1.PNG","/bi-the-way/mrbest2.PNG","/bi-the-way/mrbest3.PNG","/bi-the-way/mrbest4.PNG"],
-      details: {
-        paragraphs: [
-          "Desktop, mobile and web shop for sport items.",
-          "JavaFX (desktop), FlutterFlow (mobile), Symfony (web) with admin dashboard.",
-        ],
-      },
-      summary: "E-commerce suite: JavaFX (desktop), FlutterFlow (mobile), Symfony (web) + admin dashboard.",
-      tags: ["JavaFX", "FlutterFlow", "Symfony", "Web"],
-    },
-    {
-      id: "agro-predict",
-      title: "AgroPredict — ML & BI Web App",
-      year: "2024",
-      cover: "/bi-the-way/agro6.PNG?v=1",
-      gallery: ["/bi-the-way/agro5.PNG","/bi-the-way/agro4.PNG","/bi-the-way/agro3.PNG","/bi-the-way/agro2.PNG","/bi-the-way/agro&.PNG"],
-      details: {
-        paragraphs: [
-          "Intelligent web app for crop production forecasting and recommendation in India (ML + Power BI).",
-          "KNN predictions, AgriBot chatbot, dynamic forms, secure Flask UI.",
-        ],
-      },
-      summary: "Crop prediction & recommendation (KNN), Power BI dashboard, chatbot, secure Flask UI.",
-      tags: ["Flask", "ML", "Power BI"],
-    },
-  ],
-};
+        <div className="grid max-h-[calc(88vh-140px)] gap-0 overflow-y-auto lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="border-b border-slate-200/70 p-6 dark:border-white/10 lg:border-b-0 lg:border-r">
+            <img
+              src={project.cover}
+              alt={project.title}
+              className="aspect-[16/10] w-full rounded-[1.5rem] object-cover"
+            />
+            <div className="prose prose-slate mt-6 max-w-none dark:prose-invert">
+              {details.paragraphs.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+              {details.features?.length ? (
+                <>
+                  <h4>{data.ui.keyFeatures}</h4>
+                  <ul>
+                    {details.features.map((feature) => (
+                      <li key={feature}>{feature}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
+              {details.stack?.length ? (
+                <>
+                  <h4>{data.ui.stack}</h4>
+                  <ul>
+                    {details.stack.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
+            </div>
+          </div>
+
+          <aside className="p-6">
+            <h4 className="text-lg font-semibold tracking-tight">{data.ui.gallery}</h4>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              {(project.gallery || [project.cover]).map((image) => (
+                <button
+                  key={image}
+                  type="button"
+                  className="overflow-hidden rounded-2xl border border-slate-200/70 dark:border-white/10"
+                  onClick={() => onOpenLightbox({ src: image, title: project.title })}
+                >
+                  <img
+                    src={image}
+                    alt={project.title}
+                    className="aspect-[4/3] w-full object-cover transition hover:scale-105"
+                  />
+                </button>
+              ))}
+            </div>
+          </aside>
+        </div>
+      </article>
+    </div>
+  );
+}

@@ -1,8 +1,6 @@
-# Portfolio FR — Vite + React + Tailwind
+# Portfolio FR - Vite + React + Tailwind
 
-Projet prêt à exécuter dans VSCode.
-
-## Prérequis
+## Prerequis
 - Node.js 18+
 - npm
 
@@ -12,12 +10,10 @@ npm install
 npm run dev
 ```
 
-Ouvre l'URL affichée dans le terminal.
-
 ## Personnalisation
-- Modifie `src/portfolio-fr.jsx` (section **DATA ZONE**) : identité, projets, services, compétences, parcours, liens (CV/LinkedIn).
-- Remplace les images `cover` par tes propres visuels.
-- Mets ton email et le lien direct vers ton **CV** (Google Drive ou PDF public).
+- Modifie `src/data/portfolioData.js` pour ton contenu.
+- Modifie `src/portfolio-fr.jsx` pour la structure et l'UI.
+- Mets les assets dans `public/bi-the-way`.
 
 ## Build de production
 ```bash
@@ -25,5 +21,15 @@ npm run build
 npm run preview
 ```
 
-## Déploiement
-- **Vercel** ou **Netlify** : dépôt Git + import, configuration par défaut.
+## Deploiement Vercel
+1. Cree un repository GitHub et pousse ce projet.
+2. Va sur `https://vercel.com/new`.
+3. Importe ton repo GitHub.
+4. Laisse les reglages par defaut :
+   `Framework Preset: Vite`
+   `Build Command: vite build`
+   `Output Directory: dist`
+5. Clique sur `Deploy`.
+
+Tu obtiendras un lien public du type :
+`https://ton-portfolio.vercel.app`
