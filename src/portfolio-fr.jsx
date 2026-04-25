@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import { portfolioContent } from "./data/portfolioData";
 
 const ALL_TAGS = {
@@ -13,36 +13,106 @@ function getPageFromHash() {
   return PAGE_IDS.includes(hash) ? hash : "accueil";
 }
 
-function getSkillIcon(skill) {
-  const icons = {
-    "Power BI": "📊",
-    SQL: "🗄",
-    Talend: "⚙",
-    Python: "🐍",
-    Flask: "🌐",
-    "Machine Learning": "🤖",
-    "Deep Learning": "🧠",
-    Java: "☕",
-    PHP: "🐘",
-    "Spring Boot": "🍃",
-    "C/C++": "💻",
-    "HTML/CSS": "🎨",
-    JavaScript: "✨",
-    Symfony: "🔷",
-    FlutterFlow: "📱",
-    Angular: "🅰",
-  };
+const SKILL_LOGOS = {
+  "Power BI": {
+    src: "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/powerbi.svg",
+    fallback: "BI",
+    invert: true,
+  },
+  SQL: {
+    src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg",
+    fallback: "SQL",
+  },
+  Talend: {
+    src: "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/talend.svg",
+    fallback: "TL",
+    invert: true,
+  },
+  Python: {
+    src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg",
+    fallback: "PY",
+  },
+  Flask: {
+    src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/flask/flask-original.svg",
+    fallback: "FL",
+    invert: true,
+  },
+  "Machine Learning": {
+    src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tensorflow/tensorflow-original.svg",
+    fallback: "ML",
+  },
+  "Deep Learning": {
+    src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/pytorch/pytorch-original.svg",
+    fallback: "DL",
+  },
+  Java: {
+    src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg",
+    fallback: "JV",
+  },
+  PHP: {
+    src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/php/php-original.svg",
+    fallback: "PHP",
+  },
+  "Spring Boot": {
+    src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/spring/spring-original.svg",
+    fallback: "SB",
+  },
+  "C/C++": {
+    src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg",
+    fallback: "C++",
+  },
+  "HTML/CSS": {
+    src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg",
+    fallback: "UI",
+  },
+  JavaScript: {
+    src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg",
+    fallback: "JS",
+  },
+  Symfony: {
+    src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/symfony/symfony-original.svg",
+    fallback: "SF",
+    invert: true,
+  },
+  FlutterFlow: {
+    src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/flutter/flutter-original.svg",
+    fallback: "FF",
+  },
+  Angular: {
+    src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/angularjs/angularjs-original.svg",
+    fallback: "NG",
+  },
+};
 
-  return icons[skill] || "•";
+function SkillLogo({ skill }) {
+  const logo = SKILL_LOGOS[skill];
+
+  if (!logo?.src) {
+    return <span>{skill.slice(0, 2).toUpperCase()}</span>;
+  }
+
+  return (
+    <img
+      src={logo.src}
+      alt=""
+      className={`h-6 w-6 object-contain ${logo.invert ? "dark:invert" : ""}`}
+      loading="lazy"
+      onError={(event) => {
+        event.currentTarget.style.display = "none";
+        event.currentTarget.nextElementSibling?.classList.remove("hidden");
+      }}
+    />
+  );
 }
 
 export default function PortfolioFR() {
-  const [theme, setTheme] = useState("light");
+  const [theme, setTheme] = useState("dark");
   const [lang, setLang] = useState("fr");
   const [currentPage, setCurrentPage] = useState(() => getPageFromHash());
   const [activeTag, setActiveTag] = useState(ALL_TAGS.fr);
   const [lightbox, setLightbox] = useState(null);
   const [openProject, setOpenProject] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -52,18 +122,19 @@ export default function PortfolioFR() {
   const data = portfolioContent[lang];
   const allTagLabel = ALL_TAGS[lang];
   const projects = data.projects;
+  const navigationItems = [
+    [data.ui.home, "accueil"],
+    [data.ui.about, "apropos"],
+    [data.ui.experiences, "experiences"],
+    [data.ui.projects, "projets"],
+    [data.ui.resume, "resume"],
+  ];
 
   useEffect(() => {
     setActiveTag(allTagLabel);
     setOpenProject(null);
     setLightbox(null);
   }, [allTagLabel]);
-
-  useEffect(() => {
-    if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) {
-      setTheme("dark");
-    }
-  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
@@ -103,6 +174,7 @@ export default function PortfolioFR() {
     setCurrentPage(page);
     setOpenProject(null);
     setLightbox(null);
+    setMobileMenuOpen(false);
 
     if (window.location.hash.replace("#", "") !== page) {
       window.location.hash = page;
@@ -147,13 +219,7 @@ export default function PortfolioFR() {
           </button>
 
           <nav className="hidden items-center gap-3 text-sm md:flex">
-            {[
-              [data.ui.home, "accueil", "⌂"],
-              [data.ui.about, "apropos", "◌"],
-              [data.ui.experiences, "experiences", "▣"],
-              [data.ui.projects, "projets", "⌘"],
-              [data.ui.resume, "resume", "☰"],
-            ].map(([label, id, icon]) => (
+            {navigationItems.map(([label, id]) => (
               <button
                 key={id}
                 type="button"
@@ -164,7 +230,6 @@ export default function PortfolioFR() {
                     : "text-slate-700 hover:bg-slate-900/5 hover:text-amber-600 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white"
                 }`}
               >
-                <span className="text-sm opacity-80">{icon}</span>
                 {label}
               </button>
             ))}
@@ -195,14 +260,106 @@ export default function PortfolioFR() {
               type="button"
               aria-label={data.ui.themeToggle}
               onClick={() => setTheme((current) => (current === "light" ? "dark" : "light"))}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-300 text-slate-800 transition hover:border-amber-500 dark:border-white/12 dark:bg-white/[0.03] dark:text-slate-100"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-300 text-slate-800 transition hover:border-amber-500 hover:text-amber-600 dark:border-white/12 dark:bg-white/[0.03] dark:text-slate-100"
             >
-              <span aria-hidden="true" className="text-lg leading-none">
-                {theme === "light" ? "☀" : "☾"}
+              {theme === "dark" ? (
+                <svg
+                  aria-hidden="true"
+                  className="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.5 6.5 0 1 0 9.8 9.8Z" />
+                </svg>
+              ) : (
+                <svg
+                  aria-hidden="true"
+                  className="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M12 2v2" />
+                  <path d="M12 20v2" />
+                  <path d="m4.93 4.93 1.41 1.41" />
+                  <path d="m17.66 17.66 1.41 1.41" />
+                  <path d="M2 12h2" />
+                  <path d="M20 12h2" />
+                  <path d="m6.34 17.66-1.41 1.41" />
+                  <path d="m19.07 4.93-1.41 1.41" />
+                </svg>
+              )}
+            </button>
+            <button
+              type="button"
+              aria-label={mobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen((current) => !current)}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-300 text-slate-800 transition hover:border-amber-500 dark:border-white/12 dark:bg-white/[0.03] dark:text-slate-100 md:hidden"
+            >
+              <span className="flex w-5 flex-col gap-1.5" aria-hidden="true">
+                <span
+                  className={`h-0.5 rounded-full bg-current transition ${
+                    mobileMenuOpen ? "translate-y-2 rotate-45" : ""
+                  }`}
+                />
+                <span
+                  className={`h-0.5 rounded-full bg-current transition ${
+                    mobileMenuOpen ? "opacity-0" : ""
+                  }`}
+                />
+                <span
+                  className={`h-0.5 rounded-full bg-current transition ${
+                    mobileMenuOpen ? "-translate-y-2 -rotate-45" : ""
+                  }`}
+                />
               </span>
             </button>
           </div>
         </div>
+
+        {mobileMenuOpen ? (
+          <nav className="border-t border-slate-200/80 px-4 pb-4 dark:border-white/10 md:hidden">
+            <div className="mx-auto grid max-w-6xl gap-2 pt-3 text-sm">
+              {navigationItems.map(([label, id]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => goToPage(id)}
+                  className={`flex items-center justify-between rounded-xl px-4 py-3 text-left transition ${
+                    currentPage === id
+                      ? "bg-slate-900/5 text-amber-600 dark:bg-white/10 dark:text-amber-300"
+                      : "text-slate-700 hover:bg-slate-900/5 hover:text-amber-600 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white"
+                  }`}
+                >
+                  <span className="inline-flex items-center gap-3">
+                    <span>{label}</span>
+                  </span>
+                  <span aria-hidden="true">&gt;</span>
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => goToPage("contact")}
+                className={`mt-1 rounded-xl px-4 py-3 text-left font-medium shadow-sm transition ${
+                  currentPage === "contact"
+                    ? "bg-violet-500 text-white"
+                    : "bg-violet-500/90 text-white hover:bg-violet-500"
+                }`}
+              >
+                {data.ui.contact}
+              </button>
+            </div>
+          </nav>
+        ) : null}
       </header>
 
       <main className="relative z-10">
@@ -322,8 +479,9 @@ export default function PortfolioFR() {
                       key={skill}
                       className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200"
                     >
-                      <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-lg shadow-sm dark:bg-slate-900">
-                        {getSkillIcon(skill)}
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-[11px] font-bold uppercase tracking-wide text-violet-600 shadow-sm ring-1 ring-slate-200/80 dark:bg-slate-900 dark:text-amber-300 dark:ring-white/10">
+                        <SkillLogo skill={skill} />
+                        <span className="hidden">{SKILL_LOGOS[skill]?.fallback || skill.slice(0, 2).toUpperCase()}</span>
                       </span>
                       <span className="font-medium">{skill}</span>
                     </li>
